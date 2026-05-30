@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopon's Classroom Pro - Final Master</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Math Support -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root { --primary: #7c3aed; --bg: #0a0a0c; --card: #16161a; --opt-bg: #0c1833; --q-orange: #f97316; --correct: #10b981; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Hind Siliguri', sans-serif; background-color: var(--bg); color: #fff; overflow-x: hidden; }
+
+        /* Dashboard */
+        #home-page { padding: 20px; max-width: 1000px; margin: 0 auto; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .btn-new { background: linear-gradient(90deg, #7c3aed, #4f46e5); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-settings { background: #333; color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; }
+
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .project-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #333; }
+        .btn-sm { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; color: #fff; margin-right: 5px; }
+
+        /* Settings Modal */
+        #library-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; padding: 20px; }
+        .library-content { background: var(--card); max-width: 500px; margin: auto; border-radius: 15px; padding: 20px; }
+        .bg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .bg-thumb { width: 100%; aspect-ratio: 16/9; background-size: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; position: relative; }
+        .bg-thumb.active { border-color: var(--primary); }
+        .del-bg { position: absolute; top: -5px; right: -5px; background: red; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; line-height: 18px; text-align: center; cursor: pointer; }
+
+        /* Editor UI */
+        #setup-page { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .config-card { width: 100%; max-width: 600px; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        input, textarea { width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-family: inherit; outline: none; }
+        textarea { height: 180px; resize: none; }
+
+        /* Preview Area */
+        #slide-page { display: none; padding: 10px; }
+        .top-nav { width: 100%; max-width: 1280px; margin: 0 auto 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .slides-container { display: flex; flex-direction: column; align-items: center; gap: 30px; width: 100%; }
+
+        /* Slide Scale */
+        .slide-wrapper { background: #000; box-shadow: 0 0 30px rgba(0,0,0,0.5); overflow: hidden; transform-origin: top center; border: 1px solid #222; }
+        .slide-frame { width: 1280px; height: 720px; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; background-color: #000; flex-shrink: 0; transform-origin: top left; }
+        
+        /* Header - Fixed to 18px Padding */
+        .header-elements { width: 100%; height: 14%; display: flex; justify-content: space-between; align-items: center; padding: 18px 5% 0 5%; z-index: 10; }
+        .logo-box { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; outline: none; }
+        .logo-box span { color: #4f92ff; display: block; }
+        .subject-box { font-size: 38px; font-weight: 800; color: #ffffff; text-align: center; flex: 1; outline: none; }
+        .watermark-box { font-size: 34px; font-weight: 700; color: #ffffff; outline: none; }
+        .wm-blue { color: #4f92ff; }
+
+        /* Content Body Layout */
+        .content-body { display: flex; flex: 1; padding: 0 5% 5% 5%; overflow: hidden; position: relative; }
+
+        /* Normal Slide Styling (Restored) */
+        .left-gap { width: 35%; pointer-events: none; }
+        .right-text { width: 65%; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 10px; gap: 2px; }
+        .line-wrapper { position: relative; display: flex; align-items: center; margin-bottom: 5px; }
+        .content-line { flex: 1; font-size: 32px; color: #ffffff; line-height: 1.25; outline: none; padding: 2px 5px; border-radius: 4px; }
+
+        /* MCQ Slide Styling */
+        .mcq-container { display: flex; width: 100%; height: 100%; gap: 30px; }
+        .mcq-left { width: 48%; display: flex; flex-direction: row; gap: 20px; padding-top: 30px; }
+        .q-num-circle { width: 70px; height: 70px; background: var(--q-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 800; flex-shrink: 0; }
+        .q-text { font-size: 34px; color: #fff; font-weight: 700; line-height: 1.3; outline: none; flex: 1; }
+        .mcq-right { width: 48%; display: flex; flex-direction: column; gap: 12px; padding-top: 20px; }
+        .opt-pill { background: var(--opt-bg); border: 2px solid #1e3a8a; height: 72px; border-radius: 40px; display: flex; align-items: center; padding: 0 10px; position: relative; }
+        .opt-marker { width: 52px; height: 52px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px; }
+        .opt-txt { font-size: 26px; color: #fff; font-weight: 600; outline: none; flex: 1; }
+        .is-correct { border-color: var(--correct) !important; background: #064e3b !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+
+        /* Tools */
+        .line-tools { position: absolute; left: -140px; display: none; gap: 5px; background: #222; padding: 5px; border-radius: 5px; z-index: 1000; }
+        .line-wrapper:hover .line-tools, .opt-pill:hover .line-tools, .mcq-left:hover .line-tools { display: flex; }
+        @media (max-width: 1200px) { .line-tools { position: static; display: flex; margin-bottom: 5px; } }
+
+        .tool-btn { cursor: pointer; border: none; padding: 8px 12px; border-radius: 3px; font-size: 16px; color: #fff; }
+        .btn-magic { background: #facc15; color: #000; }
+        .btn-del { background: #ef4444; }
+        .btn-move { background: #3b82f6; }
+
+        /* Utilities */
+        .bold-yellow-big { color: #facc15 !important; font-weight: 800; font-size: 1.12em; display: inline-block; }
+        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 20000; flex-direction: column; justify-content: center; align-items: center; }
+        .spin { border: 4px solid #222; border-top: 4px solid #facc15; border-radius: 50%; width: 40px; height: 40px; animation: rotate 1s linear infinite; }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        
+        #quality-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 15px; text-align: center; border: 1px solid #444; width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <!-- ১. হোমপেজ -->
+    <div id="home-page">
+        <div class="dashboard-header">
+            <h2>আমার স্লাইডসমূহ</h2>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-settings" onclick="openLibrary()">⚙️</button>
+                <button class="btn-new" onclick="showSetup()">➕ নতুন প্রজেক্ট</button>
+            </div>
+        </div>
+        <div class="project-grid" id="projectGrid"></div>
+    </div>
+
+    <!-- ২. লাইব্রেরি মোডাল -->
+    <div id="library-modal">
+        <div class="library-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>ব্যাকগ্রাউন্ড লাইব্রেরি</h3>
+                <button onclick="document.getElementById('library-modal').style.display='none'" style="background:none; border:none; color:red; font-size:22px; cursor:pointer;">✖</button>
+            </div>
+            <input type="file" id="libUpload" style="margin-top:15px;" accept="image/*" onchange="uploadToLibrary(this)">
+            <div class="bg-grid" id="libGrid"></div>
+        </div>
+    </div>
+
+    <!-- ৩. ইনপুট এডিটর -->
+    <div id="setup-page">
+        <div class="config-card">
+            <h2>স্লাইড তৈরির তথ্য</h2>
+            <input type="text" id="titleInput" placeholder="প্রজেক্ট টাইটেল">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="switchType('normal')" id="btn-normal" style="flex:1; padding:10px; border-radius:5px; border:none; background:var(--primary); color:white; cursor:pointer;">নরমাল স্লাইড</button>
+                <button onclick="switchType('mcq')" id="btn-mcq" style="flex:1; padding:10px; border-radius:5px; border:none; background:#333; color:white; cursor:pointer;">এমসিকিউ স্লাইড</button>
+            </div>
+            <textarea id="contentInput" placeholder="আপনার লেখা বা প্রশ্ন দিন..."></textarea>
+            <label style="font-size:12px; color:#888;">ব্যাকগ্রাউন্ড সিলেক্ট করুন:</label>
+            <div id="bgSelector" class="bg-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:15px;"></div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-new" style="flex: 1;" onclick="handleBuild()">🪄 তৈরি করুন</button>
+                <button onclick="showHome()" style="background: #333; border: none; color: #fff; padding: 0 15px; border-radius: 8px; cursor: pointer;">বাতিল</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ৪. প্রিভিউ মোড -->
+    <div id="slide-page">
+        <div class="top-nav">
+            <button onclick="showHome()" style="background: #444; color:#fff; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">🏠 হোম</button>
+            <button onclick="saveProject()" style="background: #059669; color:#fff; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">💾 সেভ</button>
+            <button class="btn-new" onclick="document.getElementById('quality-modal').style.display='flex'">📥 ডাউনলোড PDF</button>
+        </div>
+        <div class="slides-container" id="slidesList"></div>
+    </div>
+
+    <!-- ৫. ডাউনলোড মোডাল -->
+    <div id="quality-modal">
+        <div class="modal-content">
+            <h3>পিডিএফ সেভ করুন</h3>
+            <input type="text" id="pdfFileName" placeholder="ফাইলের নাম">
+            <button class="btn-new" style="width:100%; margin-bottom:10px; background:#6b7280;" onclick="generatePDF(1)">🚀 দ্রুত (Low Quality)</button>
+            <button class="btn-new" style="width:100%; margin-bottom:10px; background:#3b82f6;" onclick="generatePDF(2)">⚖️ মিডিয়াম</button>
+            <button class="btn-new" style="width:100%; background:#7c3aed;" onclick="generatePDF(3)">💎 আল্ট্রা এইচডি</button>
+            <button onclick="document.getElementById('quality-modal').style.display='none'" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer;">বাতিল</button>
+        </div>
+    </div>
+
+    <div id="loader"> <div class="spin"></div> <p style="margin-top: 15px; color: #facc15;">অপেক্ষা করুন...</p> </div>
+
+    <script>
+        let db;
+        let currentBgData = "";
+        let currentProjectId = null;
+        let slideType = "normal";
+
+        const DEFAULT_LOGO = `SHOPON'S<span>CLASSROOM</span>`;
+        const DEFAULT_WM = `পানি<span class="wm-blue">পান্তা</span>`;
+
+        // IndexedDB initialization
+        const request = indexedDB.open("ShoponStableDB", 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            db.createObjectStore("library", { keyPath: "id", autoIncrement: true });
+            db.createObjectStore("projects", { keyPath: "id" });
+        };
+        request.onsuccess = (e) => { db = e.target.result; renderDashboard(); loadLibrary(); };
+
+        // Background Library logic
+        function openLibrary() { document.getElementById('library-modal').style.display = 'flex'; }
+        function loadLibrary() {
+            const grid = document.getElementById('libGrid');
+            const selector = document.getElementById('bgSelector');
+            grid.innerHTML = ""; selector.innerHTML = "";
+            const transaction = db.transaction(["library"], "readonly");
+            transaction.objectStore("library").openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const data = cursor.value.data;
+                    const id = cursor.value.id;
+                    grid.innerHTML += `<div class="bg-thumb" style="background-image:url(${data})"><span class="del-bg" onclick="deleteBg(${id})">✖</span></div>`;
+                    const sel = document.createElement('div');
+                    sel.className = 'bg-thumb'; sel.style.backgroundImage = `url(${data})`;
+                    sel.onclick = () => { currentBgData = data; document.querySelectorAll('#bgSelector .bg-thumb').forEach(t=>t.classList.remove('active')); sel.classList.add('active'); };
+                    selector.appendChild(sel);
+                    cursor.continue();
+                }
+            };
+        }
+        function uploadToLibrary(input) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const transaction = db.transaction(["library"], "readwrite");
+                transaction.objectStore("library").add({ data: e.target.result });
+                transaction.oncomplete = () => loadLibrary();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+        function deleteBg(id) {
+            const transaction = db.transaction(["library"], "readwrite");
+            transaction.objectStore("library").delete(id);
+            transaction.oncomplete = () => loadLibrary();
+        }
+
+        // Slide logic
+        function switchType(type) {
+            slideType = type;
+            document.getElementById('btn-normal').style.background = type === 'normal' ? 'var(--primary)' : '#333';
+            document.getElementById('btn-mcq').style.background = type === 'mcq' ? 'var(--primary)' : '#333';
+        }
+
+        function handleBuild() {
+            currentProjectId = Date.now().toString();
+            const title = document.getElementById('titleInput').value;
+            const content = document.getElementById('contentInput').value;
+            document.getElementById('setup-page').style.display='none';
+            document.getElementById('slide-page').style.display='block';
+            const container = document.getElementById('slidesList');
+            container.innerHTML = "";
+
+            if(slideType === 'normal') {
+                const lines = content.split('\n').filter(l => l.trim() !== "");
+                for(let i=0; i<lines.length; i+=6) {
+                    const w = document.createElement('div'); w.className='slide-wrapper';
+                    w.appendChild(createNormalSlide(title, lines.slice(i, i+6)));
+                    container.appendChild(w);
+                }
+            } else {
+                const blocks = content.split(/Question:/i).filter(b => b.trim() !== "");
+                blocks.forEach((block, idx) => {
+                    const qText = (block.split(/[A-D]\)/i)[0] || "").trim();
+                    const opts = ['A)','B)','C)','D)'].map(p => (block.split(p)[1] || "").split(/[A-D]\)|Correct Answer:/i)[0].trim());
+                    const correctLetter = (block.match(/Correct Answer:\s*([A-D])/i) || ["", ""])[1].toUpperCase();
+                    const cIdx = ['A','B','C','D'].indexOf(correctLetter);
+                    
+                    const w1 = document.createElement('div'); w1.className='slide-wrapper';
+                    w1.appendChild(createMCQSlide(title, qText, opts, idx+1, -1));
+                    container.appendChild(w1);
+
+                    const w2 = document.createElement('div'); w2.className='slide-wrapper';
+                    w2.appendChild(createMCQSlide(title, qText, opts, idx+1, cIdx));
+                    container.appendChild(w2);
+                });
+            }
+            adjustSlideScale();
+            renderMath();
+        }
+
+        function createNormalSlide(title, lines, logo, wm) {
+            const slide = createBaseSlide(title, logo, wm);
+            const body = slide.querySelector('.content-body');
+            body.innerHTML = `<div class="left-gap"></div><div class="right-text"></div>`;
+            const area = body.querySelector('.right-text');
+            lines.forEach(text => {
+                const lw = document.createElement('div'); lw.className = 'line-wrapper';
+                lw.innerHTML = `<div class="line-tools"><button class="tool-btn btn-magic" onclick="doMagic()">✨</button><button class="tool-btn btn-del" onclick="this.parentElement.parentElement.remove()">❌</button><button class="tool-btn btn-move" onclick="moveEverythingDown(this.parentElement.parentElement)">➡️</button></div><div class="content-line" contenteditable="true">${text}</div>`;
+                area.appendChild(lw);
+            });
+            return slide;
+        }
+
+        function createMCQSlide(title, q, options, num, correctIdx, logo, wm) {
+            const slide = createBaseSlide(title, logo, wm);
+            slide.dataset.correctIdx = correctIdx;
+            slide.querySelector('.content-body').innerHTML = `
+                <div class="mcq-container">
+                    <div class="mcq-left"><div class="q-num-circle">${num}</div><div class="q-text" contenteditable="true">${q}</div></div>
+                    <div class="mcq-right">${['ক', 'খ', 'গ', 'ঘ'].map((m, i) => `<div class="opt-pill ${i == correctIdx ? 'is-correct' : ''}"><div class="opt-marker">${m}</div><div class="opt-txt" contenteditable="true">${options[i] || ''}</div></div>`).join('')}</div>
+                </div>`;
+            return slide;
+        }
+
+        function createBaseSlide(title, logo, wm) {
+            const slide = document.createElement('div'); slide.className = 'slide-frame';
+            if (currentBgData) slide.style.backgroundImage = `url(${currentBgData})`;
+            slide.innerHTML = `<div class="header-elements">
+                <div class="logo-box" contenteditable="true" oninput="syncHeaders(this, '.logo-box')">${logo || DEFAULT_LOGO}</div>
+                <div class="subject-box" contenteditable="true" oninput="syncHeaders(this, '.subject-box')">${title || 'LESSON'}</div>
+                <div class="watermark-box" contenteditable="true" oninput="syncHeaders(this, '.watermark-box')">${wm || DEFAULT_WM}</div>
+            </div><div class="content-body"></div>`;
+            return slide;
+        }
+
+        function syncHeaders(el, sel) { document.querySelectorAll(sel).forEach(b => { if(b!==el) b.innerHTML = el.innerHTML; }); }
+
+        function moveEverythingDown(el) {
+            const slide = el.closest('.slide-frame');
+            const items = Array.from(el.closest('.right-text').querySelectorAll('.line-wrapper'));
+            const idx = items.indexOf(el);
+            let nextW = slide.closest('.slide-wrapper').nextElementSibling;
+            if (!nextW) {
+                const wrapper = document.createElement('div'); wrapper.className = 'slide-wrapper';
+                const curT = slide.querySelector('.subject-box').innerHTML;
+                const curL = slide.querySelector('.logo-box').innerHTML;
+                const curW = slide.querySelector('.watermark-box').innerHTML;
+                wrapper.appendChild(createNormalSlide(curT, [], curL, curW));
+                slide.closest('.slide-wrapper').parentNode.appendChild(wrapper);
+                nextW = wrapper;
+                adjustSlideScale();
+            }
+            const nextFrame = nextW.querySelector('.slide-frame');
+            items.slice(idx).reverse().forEach(item => nextFrame.querySelector('.right-text').prepend(item));
+        }
+
+        function saveProject() {
+            const slides = document.querySelectorAll('.slide-frame');
+            let slideData = [];
+            slides.forEach(s => {
+                const isMCQ = s.querySelector('.mcq-container') !== null;
+                slideData.push({
+                    type: isMCQ ? 'mcq' : 'normal',
+                    num: isMCQ ? s.querySelector('.q-num-circle').innerText : null,
+                    q: isMCQ ? s.querySelector('.q-text').innerHTML : null,
+                    options: isMCQ ? Array.from(s.querySelectorAll('.opt-txt')).map(o => o.innerHTML) : null,
+                    lines: !isMCQ ? Array.from(s.querySelectorAll('.content-line')).map(l => l.innerHTML) : null,
+                    correctIdx: s.dataset.correctIdx || -1,
+                    logo: s.querySelector('.logo-box').innerHTML,
+                    subject: s.querySelector('.subject-box').innerHTML,
+                    wm: s.querySelector('.watermark-box').innerHTML
+                });
+            });
+            const p = { id: currentProjectId, title: document.getElementById('titleInput').value, bg: currentBgData, slides: slideData };
+            const trans = db.transaction(["projects"], "readwrite");
+            trans.objectStore("projects").put(p);
+            trans.oncomplete = () => alert("সেভ হয়েছে!");
+        }
+
+        function loadProject(id) {
+            const trans = db.transaction(["projects"], "readonly");
+            trans.objectStore("projects").get(id).onsuccess = (e) => {
+                const p = e.target.result;
+                currentProjectId = p.id;
+                document.getElementById('titleInput').value = p.title;
+                currentBgData = p.bg || "";
+                document.getElementById('setup-page').style.display='none';
+                document.getElementById('home-page').style.display='none';
+                document.getElementById('slide-page').style.display='block';
+                const container = document.getElementById('slidesList');
+                container.innerHTML = "";
+                p.slides.forEach(s => {
+                    const w = document.createElement('div'); w.className = 'slide-wrapper';
+                    if(s.type === 'mcq') w.appendChild(createMCQSlide(s.subject, s.q, s.options, s.num, s.correctIdx, s.logo, s.wm));
+                    else w.appendChild(createNormalSlide(s.subject, s.lines, s.logo, s.wm));
+                    container.appendChild(w);
+                });
+                adjustSlideScale();
+                renderMath();
+            };
+        }
+
+        function renderDashboard() {
+            const grid = document.getElementById('projectGrid');
+            grid.innerHTML = "";
+            const trans = db.transaction(["projects"], "readonly");
+            trans.objectStore("projects").openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const p = cursor.value;
+                    const card = document.createElement('div'); card.className = 'project-card';
+                    card.innerHTML = `<h3>${p.title || 'Untitled'}</h3><button class="btn-sm" style="background:#3b82f6" onclick="loadProject('${p.id}')">ওপেন</button><button class="btn-sm" style="background:#ef4444" onclick="deleteProject('${p.id}')">ডিলিট</button>`;
+                    grid.appendChild(card);
+                    cursor.continue();
+                }
+            };
+        }
+        function deleteProject(id) { if(confirm("ডিলিট করবেন?")) { const trans = db.transaction(["projects"], "readwrite"); trans.objectStore("projects").delete(id); trans.oncomplete = () => renderDashboard(); } }
+
+        function showHome() { document.getElementById('slide-page').style.display='none'; document.getElementById('setup-page').style.display='none'; document.getElementById('home-page').style.display='block'; renderDashboard(); }
+        function showSetup() { currentProjectId=null; document.getElementById('home-page').style.display='none'; document.getElementById('setup-page').style.display='flex'; }
+        function doMagic() { const sel = window.getSelection(); if (sel.rangeCount) { const span = document.createElement("span"); span.className = "bold-yellow-big"; sel.getRangeAt(0).surroundContents(span); } }
+        function renderMath() { if (typeof renderMathInElement === 'function') renderMathInElement(document.getElementById('slidesList'), { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false }); }
+        function adjustSlideScale() { const factor = Math.min((window.innerWidth - 30) / 1280, 1); document.querySelectorAll('.slide-wrapper').forEach(w => { w.style.width = (1280 * factor) + 'px'; w.style.height = (720 * factor) + 'px'; w.querySelector('.slide-frame').style.transform = `scale(${factor})`; }); }
+
+        async function generatePDF(quality) {
+            document.getElementById('quality-modal').style.display = 'none';
+            document.getElementById('loader').style.display = 'flex';
+            const { jsPDF } = window.jspdf;
+            const slides = document.querySelectorAll('.slide-frame');
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1280, 720] });
+            for (let i = 0; i < slides.length; i++) {
+                const frame = slides[i];
+                const originalTransform = frame.style.transform;
+                frame.style.transform = 'none';
+                frame.querySelectorAll('.line-tools').forEach(t => t.style.visibility = 'hidden');
+                const canvas = await html2canvas(frame, { scale: quality, useCORS: true, backgroundColor: '#000' });
+                if (i > 0) pdf.addPage([1280, 720], 'landscape');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 1280, 720);
+                frame.style.transform = originalTransform;
+                frame.querySelectorAll('.line-tools').forEach(t => t.style.visibility = 'visible');
+            }
+            pdf.save(`${document.getElementById('pdfFileName').value || 'Shopon_Class'}.pdf`);
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        window.onresize = adjustSlideScale;
+    </script>
+</body>
+</html>
